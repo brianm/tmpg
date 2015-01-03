@@ -15,9 +15,22 @@ import (
 )
 
 var verbose = flag.Bool("v", false, "verbose")
+var help = flag.Bool("h", false, "show help")
 
 func main() {
 	flag.Parse()
+
+	if *help {
+		fmt.Println(`USAGE: tmpg [flags]
+  Starts a PostgreSQL database on a random high port and
+  deletes the database when this process exits (C-c).
+
+OPTIONS
+  -v  Verbose output
+  -h  Show this help
+`)
+		return
+	}
 
 	data_dir, err := ioutil.TempDir(os.TempDir(), "tmpg.")
 	if err != nil {
@@ -41,17 +54,18 @@ func main() {
 		log.Fatalf("unable to start postgres: %s", err)
 	}
 
-	fmt.Printf("psql -p %d template1\n", port)
+	fmt.Printf("data\t%s\n", data_dir)
+	fmt.Printf("port\t%d\n", port)
+	fmt.Printf("repl\tpsql -p %d postgres\n", port)
 
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, os.Kill)
-	sig := <-c
-	ctl <- sig
+	// await signal to exit
+	c := make(chan os.Signal, 1)
+	signal.Notify(c)
+	ctl <- (<-c)
 	<-ctl
-	log.Println("exiting!")
 }
 
-func run(dataDir string, port int) (chan interface{}, error) {
+func run(dataDir string, port int) (chan os.Signal, error) {
 	cmd, err := exec.LookPath("postgres")
 	if err != nil {
 		return nil, err
@@ -72,20 +86,20 @@ func run(dataDir string, port int) (chan interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	postgres.Start()
 
-	ctl := make(chan interface{})
-
-	go func() {
-		<-ctl
-		err := postgres.Process.Kill()
-		if err != nil {
-			log.Fatalf("unable to kill postgres: %s", err)
-		}
-		close(ctl)
-	}()
+	ctl := make(chan os.Signal)
+	go awaitShutdown(postgres, ctl)
 
 	return ctl, nil
+}
+
+func awaitShutdown(postgres *exec.Cmd, ctl chan os.Signal) {
+	sig := <-ctl
+	err := postgres.Process.Signal(sig)
+	if err != nil {
+		log.Fatalf("unable to kill postgres: %s", err)
+	}
+	close(ctl)
 }
 
 func initdb(dataDir string, username string) error {
