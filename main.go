@@ -15,6 +15,7 @@ import (
 )
 
 var verbose = flag.Bool("v", false, "verbose")
+var uname = flag.Bool("u", false, "superuser set to current username instead of 'postgres'")
 var help = flag.Bool("h", false, "show help")
 
 func main() {
@@ -23,10 +24,16 @@ func main() {
 	if *help {
 		fmt.Println(`USAGE: tmpg [flags]
   Starts a PostgreSQL database on a random high port and
-  deletes the database when this process exits (C-c).
+  deletes the database when this process exits (C-c). 
+  
+  Auth is set to 'trust' (no passwords!), and the default
+  superuser is 'postgres' unless the -u flag is given,
+  in which case the superuser will match the current
+  username.
 
 FLAGS
   -v  Verbose output
+  -u  superuser set to current username instead of 'postgres'
   -h  Show this help
 `)
 		return
@@ -38,11 +45,15 @@ FLAGS
 	}
 	defer os.RemoveAll(data_dir)
 
-	u, err := user.Current()
-	if err != nil {
-		log.Fatalf("Unable to determine current user!")
+	username := "postgres"
+	if *uname {
+		u, err := user.Current()
+		if err != nil {
+			log.Fatalf("Unable to determine current user!")
+		}
+		username = u.Username
 	}
-	err = initdb(data_dir, u.Username)
+	err = initdb(data_dir, username)
 	if err != nil {
 		log.Fatalf("Unable to initialize data dir: %s", err)
 	}
@@ -54,9 +65,14 @@ FLAGS
 		log.Fatalf("unable to start postgres: %s", err)
 	}
 
+	fmt.Printf("user\t%s\n", username)
 	fmt.Printf("data\t%s\n", data_dir)
 	fmt.Printf("port\t%d\n", port)
-	fmt.Printf("repl\tpsql -p %d postgres\n", port)
+	if *uname {
+		fmt.Printf("repl\tpsql -p %d postgres\n", port)
+	} else {
+		fmt.Printf("repl\tpsql -U postgres -p %d postgres\n", port)
+	}
 
 	// await signal to exit
 	c := make(chan os.Signal, 1)
