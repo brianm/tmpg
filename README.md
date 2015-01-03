@@ -5,6 +5,8 @@ random high port.
 
 # To Install
 
+The only way right now is to build it from source. It's in Go, so:
+
 ```
 go get github.com/brianm/tmpg
 ```
