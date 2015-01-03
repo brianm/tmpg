@@ -25,7 +25,7 @@ func main() {
   Starts a PostgreSQL database on a random high port and
   deletes the database when this process exits (C-c).
 
-OPTIONS
+FLAGS
   -v  Verbose output
   -h  Show this help
 `)
