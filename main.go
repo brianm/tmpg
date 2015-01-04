@@ -1,8 +1,8 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"gopkg.in/alecthomas/kingpin.v1"
 	"io/ioutil"
 	"log"
 	"net"
@@ -14,31 +14,25 @@ import (
 	"strings"
 )
 
-var verbose = flag.Bool("v", false, "verbose")
-var uname = flag.Bool("u", false, "superuser set to current username instead of 'postgres'")
-var help = flag.Bool("h", false, "show help")
+var (
+	verbose *bool
+	uname   *bool
+)
+
+func init() {
+	app := kingpin.New(os.Args[0], usage)
+	app.Version("0.2")
+
+	verbose = app.Flag("verbose", "Enable verbose output").Short('v').Bool()
+	uname = app.Flag("user", "Use current $USER for superuser").Short('u').Bool()
+
+	_, err := app.Parse(os.Args[1:])
+	if err != nil {
+		app.UsageErrorf(os.Stderr, "%s", err)
+	}
+}
 
 func main() {
-	flag.Parse()
-
-	if *help {
-		fmt.Println(`USAGE: tmpg [flags]
-  Starts a PostgreSQL database on a random high port and
-  deletes the database when this process exits (C-c). 
-  
-  Auth is set to 'trust' (no passwords!), and the default
-  superuser is 'postgres' unless the -u flag is given,
-  in which case the superuser will match the current
-  username.
-
-FLAGS
-  -v  Verbose output
-  -u  superuser set to current username instead of 'postgres'
-  -h  Show this help
-`)
-		return
-	}
-
 	data_dir, err := ioutil.TempDir(os.TempDir(), "tmpg.")
 	if err != nil {
 		panic(err)
@@ -148,3 +142,7 @@ func availPort() int {
 	}
 	return port
 }
+
+const usage = `Starts a PostgreSQL database on a random high port and deletes the database when this process exits (C-c). 
+
+Auth is set to 'trust' (no passwords!), and the default superuser is 'postgres' unless the -u flag is given, in which case the superuser will match the current username.`
