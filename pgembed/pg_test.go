@@ -1,10 +1,11 @@
 package pgembed
 
 import (
-	"database/sql"
 	_ "gopkg.in/jackc/pgx.v2/stdlib"
 
+	"database/sql"
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -15,6 +16,7 @@ func TestStart(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pg.Stop()
+	defer os.RemoveAll(pg.DataDir)
 
 	if pg.DataDir == "" {
 		t.Errorf("DataDir should be set after starting")
@@ -36,12 +38,14 @@ func TestNetworkConnect(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pg.Stop()
+	defer os.RemoveAll(pg.DataDir)
 
 	conn := fmt.Sprintf("postgres://postgres@localhost:%d/postgres", pg.Port)
 	db, err := sql.Open("pgx", conn)
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer db.Close()
 
 	_, err = db.Exec(`create table things (
                         id int primary key,
