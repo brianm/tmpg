@@ -121,6 +121,10 @@ func (pg *PgEmbed) Stop() error {
 	return err
 }
 
+func (pg *PgEmbed) Pid() int {
+	return pg.postgres.Process.Pid
+}
+
 func AvailPort() uint16 {
 	l, err := net.Listen("tcp", ":0")
 	if err != nil {
