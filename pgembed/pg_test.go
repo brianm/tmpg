@@ -3,7 +3,6 @@ package pgembed
 import (
 	"database/sql"
 	_ "gopkg.in/jackc/pgx.v2/stdlib"
-	"os"
 
 	"fmt"
 	"testing"
