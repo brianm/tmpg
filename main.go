@@ -48,14 +48,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to start postgres: %s", err)
 	}
+	defer pg.Stop()
+	defer os.RemoveAll(pg.DataDir)
 
 	ctl := make(chan interface{})
 	go func() {
 		<-ctl
 		err := pg.Stop()
 		if err != nil {
-			log.Fatalf("unable to stop postgres: %s", err)
-			fmt.Fprintf(os.Stderr, "unable to stop postgres: %s", err)
+			log.Printf("unable to stop postgres: %s", err)
 		}
 		close(ctl)
 	}()
