@@ -54,7 +54,7 @@ func main() {
 		<-ctl
 		err := pg.Stop()
 		if err != nil {
-			log.Fatal("unable to stop postgres: %s", err)
+			log.Fatalf("unable to stop postgres: %s", err)
 			fmt.Fprintf(os.Stderr, "unable to stop postgres: %s", err)
 		}
 		close(ctl)
