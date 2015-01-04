@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"gopkg.in/alecthomas/kingpin.v1"
+
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"

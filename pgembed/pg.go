@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -22,7 +21,7 @@ type PgEmbed struct {
 	Superuser string
 	Out       io.Writer
 
-	postgres atomic.Value
+	postgres *exec.Cmd
 	starter  sync.Once
 	stopper  sync.Once
 }
@@ -69,20 +68,18 @@ func (pg *PgEmbed) Start() error {
 			return
 		}
 
-		postgres := exec.Command(cmd,
+		pg.postgres = exec.Command(cmd,
 			"-D", pg.DataDir,
 			"-p", strconv.Itoa(int(pg.Port)),
 			"-i",
 			"-F")
-		postgres.Stdout = pg.Out
-		postgres.Stderr = pg.Out
+		pg.postgres.Stdout = pg.Out
+		pg.postgres.Stderr = pg.Out
 
-		err = postgres.Start()
+		err = pg.postgres.Start()
 		if err != nil {
 			return
 		}
-
-		pg.postgres.Store(postgres)
 
 		// now try to connect until it is up!
 		for {
@@ -91,8 +88,8 @@ func (pg *PgEmbed) Start() error {
 				return
 			}
 		}
-
 	})
+
 	return err
 }
 
@@ -119,8 +116,7 @@ func (pg *PgEmbed) Stop() error {
 
 	var err error
 	pg.stopper.Do(func() {
-		postgres := pg.postgres.Load().(*exec.Cmd)
-		err = postgres.Process.Kill()
+		err = pg.postgres.Process.Kill()
 	})
 	return err
 }
