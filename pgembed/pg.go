@@ -116,7 +116,7 @@ func (pg *PgEmbed) Stop() error {
 
 	var err error
 	pg.stopper.Do(func() {
-		err = pg.postgres.Process.Kill()
+		err = pg.postgres.Process.Signal(os.Interrupt)
 		if err != nil {
 			return
 		}
