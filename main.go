@@ -18,7 +18,7 @@ var (
 
 func init() {
 	app := kingpin.New(os.Args[0], usage)
-	app.Version("0.4-dev")
+	app.Version("0.4")
 
 	verbose = app.Flag("verbose", "Enable verbose output").Short('v').Bool()
 	uname = app.Flag("user", "Use current $USER for superuser").Short('u').Bool()
